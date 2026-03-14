@@ -1,0 +1,1 @@
+// Authentication middleware removed. No longer used.

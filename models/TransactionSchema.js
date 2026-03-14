@@ -5,6 +5,10 @@ const TransactionSchema = new mongoose.Schema(
     {
         bace : {
             type: String,
+            required: true,
+        },
+        userId: {
+            type: String,
             required: true
         },
         small_books: {
@@ -29,8 +33,11 @@ const TransactionSchema = new mongoose.Schema(
         },
         transaction_id: {
             type: String,
+        },
+        timestamp:{
+            type: Date,
+            default: Date.now
         }
-
     }
 )
 

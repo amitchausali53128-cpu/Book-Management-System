@@ -5,8 +5,10 @@ const mongoose = require('mongoose');
 const BaceSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
+    // userId removed
     small_books: {
         type: Number,
     },
@@ -18,6 +20,10 @@ const BaceSchema = new mongoose.Schema({
     },
     total_books: {
         type: Number,
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
     }
 })
 

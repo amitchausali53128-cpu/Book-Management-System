@@ -1,0 +1,62 @@
+[
+    {
+        "amount": {
+            "paid": 0,
+            "pending": 1200
+        },
+        "_id": "69ae9adac114a3e805e50f57",
+        "bace": "BACE 2",
+        "small_books": 13,
+        "big_books": 22,
+        "mahabig_books": 25,
+        "total_books": 60,
+        "transaction_id": "txid4",
+        "timestamp": "2026-03-09T10:03:06.853Z",
+        "__v": 0
+    },
+    {
+        "amount": {
+            "paid": 0,
+            "pending": 1200
+        },
+        "_id": "69ae9ac4c114a3e805e50f53",
+        "bace": "BACE 1",
+        "small_books": 13,
+        "big_books": 22,
+        "mahabig_books": 25,
+        "total_books": 60,
+        "transaction_id": "txid3",
+        "timestamp": "2026-03-09T10:02:44.687Z",
+        "__v": 0
+    },
+    {
+        "amount": {
+            "paid": 0,
+            "pending": 1200
+        },
+        "_id": "69ae9599d04476730fbb815b",
+        "bace": "BACE 1",
+        "small_books": 13,
+        "big_books": 22,
+        "mahabig_books": 25,
+        "total_books": 60,
+        "transaction_id": "txid2",
+        "timestamp": "2026-03-09T09:40:41.082Z",
+        "__v": 0
+    },
+    {
+        "amount": {
+            "paid": 0,
+            "pending": 1000
+        },
+        "_id": "69ae95127dc456623030cad5",
+        "bace": "BACE 1",
+        "small_books": 23,
+        "big_books": 12,
+        "mahabig_books": 20,
+        "total_books": 55,
+        "transaction_id": "txid1",
+        "timestamp": "2026-03-09T09:38:26.175Z",
+        "__v": 0
+    }
+]
