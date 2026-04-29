@@ -24,9 +24,9 @@ router.post('/update-books',verifyToken, authorize(['admin']) ,async (req, res) 
             return res.status(200).json({ message: 'Books updated successfully', adminBook: newAdminBook });
         }
 
-        adminBook.small_books = small_books;
-        adminBook.big_books = big_books;
-        adminBook.mahabig_books = mahabig_books;
+        adminBook.small_books += small_books;
+        adminBook.big_books += big_books;
+        adminBook.mahabig_books += mahabig_books;
     
 
         // Save the document to the database
