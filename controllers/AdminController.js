@@ -114,4 +114,36 @@ router.post('/transfer',verifyToken, authorize(['admin']) ,async (req, res) => {
     }
 });
 
+//*********************New endpoint for v2 book transfer*********************
+
+router.post('/allotBooks', verifyToken, authorize(['admin']) , async (req, res) => {
+
+        try{
+            const { bace, books, note, amount, id } = req.body;
+
+            const sent = new Sent({ bace, books, note, amount: {
+                paid: 0,
+                pending: amount
+            } } );
+            await sent.save();
+
+            Request.findOneAndDelete({ id }, (err, request) => {
+                if (err) {
+                    console.error('Error deleting request:', err);
+                    return res.status(500).json({ message: 'Internal server error' });
+                }
+                if (!request) {
+                    return res.status(404).json({ message: 'Request not found' });
+                }
+            });
+
+            res.status(200).json({ message: 'Books allotted successfully', sent, success: true });
+            
+        }
+        catch (error) {
+            console.error('Error allotting books:', error);
+            res.status(500).json({ message: 'Internal server error' });
+        }
+});
+
 module.exports = router;

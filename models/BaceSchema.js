@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-
 //Bace_Name , Small books, Mahabig Books, Big Books, total_books
 const BaceSchema = new mongoose.Schema({
     name: {

@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { registerSchema, loginSchema } = require('../models/auth-validator');
 const User = require('../models/UserSchema');
 const BaceBook = require('../models/BaceSchema');
+const Cart = require('../models/CartSchema');
 const bcrypt = require('bcrypt');
 const validate = require('../middleware/validate-middleware');
 
@@ -34,8 +35,10 @@ router.post('/register', validate(registerSchema) ,async (req, res) => {
                     return res.status(400).json({ message: 'Bace with this name already exists' });
                 }
                 const bace = new BaceBook({ name, password, small_books: 0, big_books: 0, mahabig_books: 0, total_books: 0 });
-
+                
+                const cart = new Cart({ bace: name, books: [] });
                 await bace.save();
+                await cart.save();
         }
 
         res.status(201).json({ message: 'User registered successfully', user: { id: user._id, name: user.name, role: user.role }, token: await user.generateToken(), success: true });

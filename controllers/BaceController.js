@@ -4,6 +4,7 @@ const BaceBook = require('../models/BaceSchema');
 const Transaction = require('../models/TransactionSchema');
 const { verifyToken, authorize } = require('../middleware/authMiddleware');
 const mongoose = require('mongoose');
+const {Sent} = require('../models/RequestSchema');
 
 // ...existing code...
 router.post('/register',verifyToken, authorize(['admin','bace']) ,async (req, res) => {
@@ -119,6 +120,45 @@ router.post('/request',verifyToken, authorize(['bace']) , async (req, res) => {
         res.status(200).json({ message: 'Book request submitted successfully', success: 'true' });
     } catch (error) {
         console.error('Error requesting books:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+//*********************New endpoint for v2 book request*********************
+
+router.post('/v2/request', verifyToken, authorize(['bace']) , async (req, res) => {
+    try {
+        const { bace, books, desc } = req.body;
+
+        
+
+    } catch (error) {
+        console.error('Error requesting books:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+router.post('/payBill', verifyToken, authorize(['bace']) , async (req, res) => {
+    try {
+        const { name, amount, transaction_id } = req.body;
+        const sent = await Sent.findOne(transaction_id);
+        if (!sent) {
+            return res.status(404).json({ message: 'Transaction not found' });
+        }
+        else if (amount > sent.amount.pending) {
+            return res.status(400).json({ message: 'Amount exceeds pending amount' });
+        }
+        else if (amount <= 0) {
+            return res.status(400).json({ message: 'Amount must be greater than zero' });
+        }
+
+        sent.amount.paid += amount;
+        sent.amount.pending -= amount;
+        await sent.save();
+        res.status(200).json({ message: 'Payment recorded successfully', success: 'true' });
+
+    } catch (error) {
+        console.error('Error recording payment:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
