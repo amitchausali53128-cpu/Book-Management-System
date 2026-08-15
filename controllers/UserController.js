@@ -95,10 +95,12 @@ router.post('/forgot-password', validate(forgotPasswordSchema), async (req, res)
         const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const resetUrl = `${frontendBaseUrl}/forgot-password?token=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(normalizedEmail)}`;
 
-        await sendPasswordResetEmail({
+        sendPasswordResetEmail({
             to: user.email,
             name: user.name,
             resetUrl,
+        }).catch((error) => {
+            console.error('Error sending password reset email:', error);
         });
 
         res.status(200).json({
