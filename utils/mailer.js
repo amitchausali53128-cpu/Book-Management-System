@@ -1,12 +1,30 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+
+// Force IPv4 DNS resolution globally for this process
+dns.setDefaultResultOrder('ipv4first');
 
 const createTransporter = () => {
     const host = process.env.SMTP_HOST;
-    const port = Number(process.env.SMTP_PORT || 587);
-    const secure = String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true';
+    const port = Number(process.env.SMTP_PORT || 465);
+    const secure = port === 465; // Auto-detect: 465 = secure, 587 = not secure
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
 
-    if (!host || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        throw new Error('SMTP configuration is missing. Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS.');
+    console.log('[SMTP Config Debug]', {
+        host: host || '❌ MISSING',
+        port,
+        secure,
+        user: user ? `${user.substring(0, 5)}...` : '❌ MISSING',
+        pass: pass ? '✓ SET' : '❌ MISSING',
+    });
+
+    if (!host || !user || !pass) {
+        const missing = [];
+        if (!host) missing.push('SMTP_HOST');
+        if (!user) missing.push('SMTP_USER');
+        if (!pass) missing.push('SMTP_PASS');
+        throw new Error(`SMTP configuration missing: ${missing.join(', ')}`);
     }
 
     return nodemailer.createTransport({
@@ -14,15 +32,23 @@ const createTransporter = () => {
         port,
         secure,
         auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
+            user,
+            pass,
         },
-        // 🌟 Add these critical production settings for Render:
-        family: 4,               // Forces IPv4 (Render often fails trying to connect over IPv6)
-        connectionTimeout: 10000, // 10 seconds timeout limit before dropping the hanging request
-        greetingTimeout: 10000,  // Prevents long delays while shaking hands with the mail server
+        // Force IPv4 on Render - critical for avoiding IPv6 issues
+        connectionUrl: `smtp${secure ? 's' : ''}://${user}:${pass}@${host}:${port}/?family=4`,
+        pool: {
+            maxConnections: 1,
+            maxMessages: 5,
+            rateDelta: 20000,
+            rateLimit: 5,
+        },
+        connectionTimeout: 30000,
+        greetingTimeout: 30000,
+        socketTimeout: 30000,
         tls: {
-            rejectUnauthorized: false // Bypasses self-signed certificate blocks common on hosting networks
+            rejectUnauthorized: false,
+            minVersion: 'TLSv1.2'
         }
     });
 };
@@ -35,9 +61,17 @@ const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
     // Verify connection before attempting to send (Helps surface specific Render connection errors)
     try {
         await transporter.verify();
+        console.log('[Mailer] ✓ SMTP connection verified successfully');
     } catch (verifyError) {
-        console.error("Nodemailer transporter connection failed:", verifyError);
-        throw new Error("Email service connection failed.");
+        console.error('[Mailer] ❌ SMTP connection failed:', {
+            message: verifyError.message,
+            code: verifyError.code,
+            errno: verifyError.errno,
+            syscall: verifyError.syscall,
+            address: verifyError.address,
+            port: verifyError.port,
+        });
+        throw new Error(`Email service connection failed: ${verifyError.message}`);
     }
 
     await transporter.sendMail({
