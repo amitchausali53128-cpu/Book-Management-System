@@ -19,8 +19,8 @@ async function resolveToIPv4(hostname) {
 
 const createTransporter = async () => {
     const host = process.env.SMTP_HOST;
-    const port = Number(process.env.SMTP_PORT || 465);
-    const secure = port === 465;
+    const port = Number(process.env.SMTP_PORT || 587);  // Default to 587 (TLS) instead of 465
+    const secure = port === 465;  // Only true for port 465
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
 
@@ -51,9 +51,12 @@ const createTransporter = async () => {
             user,
             pass,
         },
-        connectionTimeout: 30000,
-        greetingTimeout: 30000,
-        socketTimeout: 30000,
+        connectionTimeout: 60000,    // 60 second timeout
+        greetingTimeout: 60000,      // 60 second greeting timeout
+        socketTimeout: 60000,        // 60 second socket timeout
+        transactionLog: true,        // Log SMTP transactions for debugging
+        logger: true,
+        debug: true,                 // Verbose logging
         tls: {
             rejectUnauthorized: false,
             minVersion: 'TLSv1.2'
