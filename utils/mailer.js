@@ -17,12 +17,28 @@ const createTransporter = () => {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS,
         },
+        // 🌟 Add these critical production settings for Render:
+        family: 4,               // Forces IPv4 (Render often fails trying to connect over IPv6)
+        connectionTimeout: 10000, // 10 seconds timeout limit before dropping the hanging request
+        greetingTimeout: 10000,  // Prevents long delays while shaking hands with the mail server
+        tls: {
+            rejectUnauthorized: false // Bypasses self-signed certificate blocks common on hosting networks
+        }
     });
 };
 
 const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
+    // Keep a single instance per request or move outside to prevent connection leaks
     const transporter = createTransporter();
     const fromAddress = process.env.MAIL_FROM || process.env.SMTP_USER;
+
+    // Verify connection before attempting to send (Helps surface specific Render connection errors)
+    try {
+        await transporter.verify();
+    } catch (verifyError) {
+        console.error("Nodemailer transporter connection failed:", verifyError);
+        throw new Error("Email service connection failed.");
+    }
 
     await transporter.sendMail({
         from: fromAddress,
