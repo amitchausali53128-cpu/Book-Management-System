@@ -1,13 +1,26 @@
 const nodemailer = require('nodemailer');
-const dns = require('dns');
+const dns = require('dns').promises;
+const net = require('net');
 
-// Force IPv4 DNS resolution globally for this process
-dns.setDefaultResultOrder('ipv4first');
+// Resolve hostname to IPv4 address explicitly
+async function resolveToIPv4(hostname) {
+    try {
+        const addresses = await dns.resolve4(hostname);
+        if (addresses.length === 0) {
+            throw new Error('No IPv4 addresses found');
+        }
+        console.log(`[DNS] Resolved ${hostname} to IPv4: ${addresses[0]}`);
+        return addresses[0];
+    } catch (error) {
+        console.error(`[DNS] Failed to resolve ${hostname}:`, error.message);
+        throw new Error(`DNS resolution failed for ${hostname}`);
+    }
+}
 
-const createTransporter = () => {
+const createTransporter = async () => {
     const host = process.env.SMTP_HOST;
     const port = Number(process.env.SMTP_PORT || 465);
-    const secure = port === 465; // Auto-detect: 465 = secure, 587 = not secure
+    const secure = port === 465;
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
 
@@ -27,21 +40,16 @@ const createTransporter = () => {
         throw new Error(`SMTP configuration missing: ${missing.join(', ')}`);
     }
 
+    // Resolve hostname to IPv4 on Render
+    const resolvedHost = await resolveToIPv4(host);
+
     return nodemailer.createTransport({
-        host,
+        host: resolvedHost,  // Use resolved IPv4 address
         port,
         secure,
         auth: {
             user,
             pass,
-        },
-        // Force IPv4 on Render - critical for avoiding IPv6 issues
-        connectionUrl: `smtp${secure ? 's' : ''}://${user}:${pass}@${host}:${port}/?family=4`,
-        pool: {
-            maxConnections: 1,
-            maxMessages: 5,
-            rateDelta: 20000,
-            rateLimit: 5,
         },
         connectionTimeout: 30000,
         greetingTimeout: 30000,
@@ -54,32 +62,34 @@ const createTransporter = () => {
 };
 
 const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
-    // Keep a single instance per request or move outside to prevent connection leaks
-    const transporter = createTransporter();
     const fromAddress = process.env.MAIL_FROM || process.env.SMTP_USER;
-
-    // Verify connection before attempting to send (Helps surface specific Render connection errors)
+    
     try {
-        await transporter.verify();
-        console.log('[Mailer] ✓ SMTP connection verified successfully');
-    } catch (verifyError) {
-        console.error('[Mailer] ❌ SMTP connection failed:', {
-            message: verifyError.message,
-            code: verifyError.code,
-            errno: verifyError.errno,
-            syscall: verifyError.syscall,
-            address: verifyError.address,
-            port: verifyError.port,
-        });
-        throw new Error(`Email service connection failed: ${verifyError.message}`);
-    }
+        // createTransporter is now async - wait for it to resolve IPv4
+        const transporter = await createTransporter();
 
-    await transporter.sendMail({
-        from: fromAddress,
-        to,
-        subject: 'Reset your password',
-        html: `
-            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #0f172a;">
+        // Verify connection before attempting to send
+        try {
+            await transporter.verify();
+            console.log('[Mailer] ✓ SMTP connection verified successfully');
+        } catch (verifyError) {
+            console.error('[Mailer] ❌ SMTP connection failed:', {
+                message: verifyError.message,
+                code: verifyError.code,
+                errno: verifyError.errno,
+                syscall: verifyError.syscall,
+                address: verifyError.address,
+                port: verifyError.port,
+            });
+            throw new Error(`Email service connection failed: ${verifyError.message}`);
+        }
+
+        await transporter.sendMail({
+            from: fromAddress,
+            to,
+            subject: 'Reset your password',
+            html: `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #0f172a;">
                 <h2 style="margin: 0 0 16px;">Hare Krishna ${name},</h2>
                 <h3>Dandwat Pranams</h3>
                 <p style="margin: 0 0 16px;">We received a request to reset your password.</p>
@@ -89,10 +99,15 @@ const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
                 </p>
                 <p style="margin: 0 0 8px;">If the button does not work, copy and paste this URL into your browser:</p>
                 <p style="word-break: break-all; color: #b45309;">${resetUrl}</p>
-            </div>
-        `,
-        text: `Hello ${name},\n\nReset your password using this link: ${resetUrl}\n\nThis link expires in 15 minutes.`,
-    });
+                </div>
+            `,
+            text: `Hello ${name},\n\nReset your password using this link: ${resetUrl}\n\nThis link expires in 15 minutes.`,
+        });
+        console.log(`[Mailer] ✓ Password reset email sent to ${to}`);
+    } catch (error) {
+        console.error('[Mailer] Error sending password reset email:', error.message);
+        throw error;
+    }
 };
 
 module.exports = {
