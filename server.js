@@ -18,6 +18,8 @@ app.use(cors(
   }
 ))
 
+app.use(express.json())
+
 const BaceBook = require('./models/BaceSchema')
 require('dotenv').config()
 
@@ -41,8 +43,6 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
 })
-
-app.use(express.json())
 app.use('/admin', adminRoutes)
 app.use('/transactions', transactionRoutes)
 app.use('/bace', baceRoutes)
