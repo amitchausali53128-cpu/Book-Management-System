@@ -1,9 +1,17 @@
+require('dotenv').config();
+
 const { Resend } = require('resend');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resendApiKey = process.env.RESEND_API_KEY;
+
+if (!resendApiKey) {
+    throw new Error('RESEND_API_KEY is required to send password reset emails');
+}
+
+const resend = new Resend(resendApiKey);
 
 const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
-    const fromAddress = process.env.MAIL_FROM || 'noreply@resend.dev';
+    const fromAddress = process.env.MAIL_FROM || 'onboarding@resend.dev';
 
     try {
         const response = await resend.emails.send({

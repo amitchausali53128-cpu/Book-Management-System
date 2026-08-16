@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 const port = process.env.PORT || 4000
 const express = require('express')
 const app = express()
@@ -21,7 +23,6 @@ app.use(cors(
 app.use(express.json())
 
 const BaceBook = require('./models/BaceSchema')
-require('dotenv').config()
 
 
 mongoose.connect(process.env.MONGO_URI).then(() => {
