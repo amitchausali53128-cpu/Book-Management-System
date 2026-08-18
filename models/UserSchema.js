@@ -56,7 +56,7 @@ UserSchema.methods.generateToken = async function(){
                 role: this.role
             }, 
             process.env.JWT_SECRET, 
-            { expiresIn: '1h' }
+            { expiresIn: '5h' }
         );
     }
     catch(error){
